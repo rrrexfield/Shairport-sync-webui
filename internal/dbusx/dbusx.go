@@ -178,15 +178,6 @@ func (c *Client) GetPlayerStatus() PlayerStatus {
 		SourceFormat: getString(obj, "org.gnome.ShairportSync", "SourceFormat"),
 		OutputFormat: getString(obj, "org.gnome.ShairportSync", "OutputFormat"),
 	}
-	// 协议降级：Protocol 属性仅 5.x 存在；老版本从版本串推断
-	// （-V 特性列表含 "AirPlay2" 即支持 AirPlay 2；3.3.x 只支持 AirPlay 1）
-	if st.Protocol == "" && st.VersionString != "" {
-		if strings.Contains(st.VersionString, "AirPlay2") {
-			st.Protocol = "AirPlay 2"
-		} else {
-			st.Protocol = "AirPlay"
-		}
-	}
 	// 音质信息：5.x SourceFormat 优先
 	if st.SourceFormat != "" {
 		if rate, depth := parseFormat(st.SourceFormat); rate > 0 {

@@ -1,7 +1,6 @@
 package dbusx
 
 import (
-	"strings"
 	"testing"
 )
 
@@ -100,36 +99,4 @@ func TestGetStatusDegraded(t *testing.T) {
 	}
 	track := c.GetTrack()
 	_ = track // 结构体零值即可，不 panic 就算通过
-}
-
-// 协议降级推断：老版本无 Protocol 属性，从版本串推断。
-func TestProtocolInference(t *testing.T) {
-	makeStatus := func(versionString string) PlayerStatus {
-		st := PlayerStatus{Available: true, VersionString: versionString}
-		if st.Protocol == "" && st.VersionString != "" {
-			if strings.Contains(st.VersionString, "AirPlay2") {
-				st.Protocol = "AirPlay 2"
-			} else {
-				st.Protocol = "AirPlay"
-			}
-		}
-		return st
-	}
-	cases := []struct {
-		vs, want string
-	}{
-		{"3.3.8-libdaemon-OpenSSL-Avahi-ALSA-stdout-pipe-soxr-metadata-dbus-mpris-sysconfdir:/etc", "AirPlay"},
-		{"4.3.5-AirPlay2-OpenSSL-Avahi-ALSA-soxr-metadata-dbus-sysconfdir:/etc", "AirPlay 2"},
-		{"5.2.1-AirPlay2-smi10-OpenSSL-Avahi-ALSA-stdout-pipe-soxr-metadata-dbus-mpris-sysconfdir:/etc", "AirPlay 2"},
-	}
-	for _, c := range cases {
-		if got := makeStatus(c.vs).Protocol; got != c.want {
-			t.Errorf("版本串 %q → Protocol=%q, 期望 %q", c.vs, got, c.want)
-		}
-	}
-	// 已有 Protocol 属性值时不覆盖（5.x 直读优先）
-	st := PlayerStatus{Protocol: "AirPlay", VersionString: "5.2.1-AirPlay2-..."}
-	if st.Protocol != "AirPlay" {
-		t.Errorf("已有 Protocol 不应被覆盖")
-	}
 }

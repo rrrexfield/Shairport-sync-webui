@@ -1,0 +1,13 @@
+{
+  "listen": ":8080",
+  "shairport_service": "shairport-sync",
+  "shairport_conf": "/etc/shairport-sync.conf",
+  "metadata_pipe": "",
+  "mixer_control": "",
+  "mixer_card": "",
+  "mixer_device": "",
+  "sudo_path": "/usr/bin/sudo",
+  "systemctl_path": "",
+  "write_script": "/usr/libexec/shairport-webui/write-config.sh",
+  "dbus_address": ""
+}

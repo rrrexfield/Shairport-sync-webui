@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f5f5f7">
+<title>Shairport Sync</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span id="svc-dot" class="dot unknown" aria-hidden="true"></span>
+      <span class="brand-name">Shairport Sync</span>
+      <span id="svc-state" class="svc-state">未知</span>
+    </div>
+    <div class="topbar-actions">
+      <span id="mem-info" class="mem-info" aria-live="off"></span>
+      <button id="btn-refresh" class="icon-btn" aria-label="刷新" title="刷新">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 12a9 9 0 1 1-2.64-6.36"/>
+          <path d="M21 3v6h-6"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<div id="conn-banner" class="conn-banner hidden" role="alert">连接中断，正在重试…</div>
+
+<main class="page">
+
+  <section class="card player-card">
+    <div class="player-top">
+      <span id="player-state" class="pill" aria-live="polite">空闲</span>
+      <span id="player-quality" class="quality" aria-live="polite"></span>
+    </div>
+    <div class="now-playing">
+      <div id="track-title" class="track-title">未在播放</div>
+      <div id="track-artist" class="track-artist"></div>
+    </div>
+    <dl class="kv">
+      <div class="kv-row"><dt>协议</dt><dd id="player-protocol">—</dd></div>
+      <div class="kv-row"><dt>客户端</dt><dd id="player-client">—</dd></div>
+      <div class="kv-row"><dt>进度</dt><dd id="player-progress">—</dd></div>
+    </dl>
+  </section>
+
+  <section class="card">
+    <h2 class="card-title">服务</h2>
+    <dl class="kv">
+      <div class="kv-row"><dt>状态</dt><dd id="svc-detail">—</dd></div>
+      <div class="kv-row"><dt>启动于</dt><dd id="svc-since">—</dd></div>
+      <div class="kv-row"><dt>init 系统</dt><dd id="svc-init">—</dd></div>
+    </dl>
+    <div class="btn-row">
+      <button id="btn-start" class="btn primary">启动</button>
+      <button id="btn-stop" class="btn danger">停止</button>
+      <button id="btn-restart" class="btn plain">重启</button>
+    </div>
+    <p id="svc-msg" class="msg" aria-live="polite"></p>
+  </section>
+
+  <section class="card">
+    <h2 class="card-title">系统</h2>
+    <dl class="kv">
+      <div class="kv-row"><dt>主机名</dt><dd id="sys-hostname">—</dd></div>
+      <div class="kv-row"><dt>Wi-Fi</dt><dd id="sys-wifi">—</dd></div>
+      <div class="kv-row"><dt>内存</dt><dd id="sys-mem">—</dd></div>
+      <div class="kv-row"><dt>负载</dt><dd id="sys-load">—</dd></div>
+      <div class="kv-row"><dt>元数据管道</dt><dd id="sys-pipe">—</dd></div>
+      <div class="kv-row"><dt>shairport 版本</dt><dd id="sys-version" class="wrap">—</dd></div>
+    </dl>
+  </section>
+
+  <section class="card">
+    <button class="card-header collapsible" id="config-toggle" aria-expanded="false" aria-controls="config-body">
+      <span class="card-title">配置</span>
+      <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="m6 9 6 6 6-6"/>
+      </svg>
+    </button>
+    <div id="config-body" class="collapse">
+      <div class="collapse-inner">
+        <div class="segmented" role="tablist" aria-label="配置分类">
+          <button class="seg active" data-tab="form" role="tab" aria-selected="true">常用设置</button>
+          <button class="seg" data-tab="advanced" role="tab" aria-selected="false">高级设置</button>
+          <button class="seg" data-tab="raw" role="tab" aria-selected="false">原始编辑</button>
+        </div>
+        <div id="tab-form" class="tab-body">
+          <form id="config-form"></form>
+          <div class="btn-row">
+            <button id="btn-save-config" class="btn plain" disabled>保存配置</button>
+            <span id="config-msg" class="msg" aria-live="polite"></span>
+          </div>
+        </div>
+        <div id="tab-advanced" class="tab-body hidden">
+          <form id="config-form-adv"></form>
+          <div class="btn-row">
+            <button id="btn-save-config-adv" class="btn plain" disabled>保存配置</button>
+          </div>
+        </div>
+        <div id="tab-raw" class="tab-body hidden">
+          <div class="editor-wrap">
+            <div id="raw-linenums" class="linenums" aria-hidden="true"></div>
+            <textarea id="raw-editor" rows="16" spellcheck="false" wrap="off"></textarea>
+          </div>
+          <div class="btn-row">
+            <button id="btn-save-raw" class="btn plain" disabled>保存原文</button>
+            <span id="raw-msg" class="msg" aria-live="polite"></span>
+          </div>
+        </div>
+        <p class="hint" id="config-hint"></p>
+        <div class="danger-zone">
+          <div class="btn-row">
+            <button id="btn-reset-config" class="btn danger">恢复默认配置</button>
+            <span id="reset-msg" class="msg" aria-live="polite"></span>
+          </div>
+          <p class="fhint">将本页管理的全部设置恢复为默认值（其余内容保留），需重启服务生效</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="foot">shairport-webui <span id="webui-version"></span></footer>
+
+<!-- 恢复默认配置确认弹窗 -->
+<div id="modal-overlay" class="modal-overlay hidden">
+  <div class="modal" role="alertdialog" aria-modal="true" aria-labelledby="modal-title" aria-describedby="modal-desc">
+    <h3 id="modal-title">恢复默认配置？</h3>
+    <p id="modal-desc">本页管理的全部设置将恢复为默认值，其余内容保留。操作前会自动备份，可从备份找回。</p>
+    <div class="modal-actions">
+      <button id="modal-cancel" class="btn plain">取消</button>
+      <button id="modal-confirm" class="btn danger">恢复</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
+<script src="app.js"></script>
+</body>
+</html>

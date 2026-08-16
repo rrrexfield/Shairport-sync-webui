@@ -1,0 +1,16 @@
+[Unit]
+Description=Shairport Sync WebUI
+After=network.target shairport-sync.service
+
+[Service]
+Type=simple
+User=shairport-webui
+Group=shairport-webui
+ExecStart=/usr/local/bin/shairport-webui
+Restart=on-failure
+RestartSec=3
+# 限制 GC 峰值，300MB 内存设备上常驻 RSS 预期 <10MB
+Environment=GOMEMLIMIT=20MiB
+
+[Install]
+WantedBy=multi-user.target

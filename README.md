@@ -80,10 +80,10 @@ sudo systemctl restart shairport-sync && systemctl is-active shairport-sync nqpt
 
 ### 第 2 步：获取 WebUI 二进制
 
-**方式一：交叉编译（推荐，在任意 Linux/WSL 上）**
+**方式一：交叉编译（推荐，在任意 Linux/WSL 上；目标设备无需 Go）**
 
 ```sh
-# 获取源码：git 仓库（发布后）或直接拷贝 shairport-webui 目录
+# 获取源码：git clone https://github.com/rrrexfield/Shairport-sync-webui 或直接拷贝目录
 cd shairport-webui
 ./deploy/build.sh            # 全部架构：armhf(GOARM=7) + arm64 + amd64
 ./deploy/build.sh armhf      # 仅 ARMv7 32 位（骁龙410 老 Debian 常见形态）
@@ -91,9 +91,9 @@ VERSION=1.1.0 ./deploy/build.sh   # 自定义版本号（默认 1.0.0，显示�
 UPX=1 ./deploy/build.sh      # 可选 upx 压缩（约 6MB → 1.5MB）
 ```
 
-产物在 `dist/`：`shairport-webui-{armhf,arm64,amd64}`，静态链接，与目标 glibc 版本无关（老 Debian 8/9 可直接运行）。
+产物在 `dist/`：`shairport-webui-{armhf,arm64,amd64}`。二进制为 `CGO_ENABLED=0` 静态链接，**目标设备无需安装 Go、无需匹配 glibc 版本**（老 Debian 8/9 可直接运行），只需拷贝对应架构的单个文件。
 
-**方式二：目标设备上直接编译**（需装 Go 1.22+）
+**方式二（可选）：在目标设备上直接编译**——仅当设备兼作构建机时使用，需自行安装 Go 1.22+
 
 ```sh
 cd shairport-webui   # 拷贝源码目录到设备

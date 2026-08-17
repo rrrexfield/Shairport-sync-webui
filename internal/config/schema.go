@@ -44,7 +44,7 @@ var Schema = []FieldDef{
 	{Section: "general", Key: "password", Type: TypeString, Label: "连接密码", Group: "common",
 		Default: "", Hint: "留空表示不要求密码"},
 	{Section: "general", Key: "interpolation", Type: TypeEnum, Label: "插值算法", Group: "advanced",
-		Default: "auto", Enum: []string{"auto", "basic", "soxr"}},
+		Default: "auto", Enum: []string{"auto", "vernier", "basic", "soxr"}, Hint: "vernier 推荐用于低性能设备（5.x 默认）"},
 	{Section: "general", Key: "playback_mode", Type: TypeEnum, Label: "播放模式", Group: "advanced",
 		Default: "stereo", Enum: []string{"stereo", "mono", "reverse stereo", "both left", "both right"}},
 	{Section: "general", Key: "ignore_volume_control", Type: TypeEnum, Label: "忽略音量控制", Group: "advanced",
@@ -56,7 +56,7 @@ var Schema = []FieldDef{
 		Default: "0.0", HasMin: true, Min: -100, HasMax: true, Max: 0,
 		Hint: "硬件或软件混音器可用的最大音量，如 0.0 或 -20.0"},
 	{Section: "general", Key: "volume_control_profile", Type: TypeEnum, Label: "音量调节曲线", Group: "common",
-		Default: "standard", Enum: []string{"standard", "flat"},
+		Default: "standard", Enum: []string{"standard", "flat", "dasl_tapered"},
 		Hint: "standard：低音量区变化慢、高音量区变化快（听感自然）；flat：线性变化"},
 	{Section: "general", Key: "regtype", Type: TypeString, Label: "服务类型", Group: "advanced",
 		Default: "_raop._tcp", Hint: "Zeroconf 广播的服务类型，AirPlay 接收固定为 _raop._tcp，一般无需修改"},
@@ -82,7 +82,7 @@ var Schema = []FieldDef{
 
 	// ---- metadata 段 ----
 	{Section: "metadata", Key: "enabled", Type: TypeEnum, Label: "启用元数据管道", Group: "common",
-		Default: "no", Enum: YesNo,
+		Default: "yes", Enum: YesNo, // 5.x 编译带 dbus/mpris 时默认开启（3.3.x 默认关闭，显式设 no 可关）
 		Hint: "开启后本页面才能显示正在播放的歌曲与音质信息"},
 	{Section: "metadata", Key: "include_cover_art", Type: TypeEnum, Label: "包含封面", Group: "advanced",
 		Default: "yes", Enum: YesNo},

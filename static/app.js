@@ -483,10 +483,23 @@ function makeField(def, isAdv) {
 
   cb.onchange = () => {
     input.disabled = !cb.checked;
-    if (cb.checked && !input.value) input.value = def.default;
-    // 同步自定义下拉的禁用状态
     const sbtn = row.querySelector(".select-btn");
     if (sbtn) sbtn.disabled = input.disabled;
+    if (!cb.checked) return;
+    if (!input.value) input.value = def.default;
+    // YesNo 开关：打开时若值仍是默认值，自动切到反值。
+    // 否则保存 "enabled = \"no\";" 这类与注释态等价的值，
+    // 注释删了配置却等于没启用，用户会以为开关没生效。
+    if (def.type === "enum" && def.enum.length === 2 && def.enum[0] === "no" && def.enum[1] === "yes" && input.value === def.default) {
+      input.value = def.default === "yes" ? "no" : "yes";
+      const sval = row.querySelector(".select-value");
+      if (sval) sval.textContent = enumLabel(input.value);
+      row.querySelectorAll(".select-option").forEach((x) => {
+        const sel = x.dataset.value === input.value;
+        x.classList.toggle("selected", sel);
+        x.setAttribute("aria-selected", sel ? "true" : "false");
+      });
+    }
   };
 
   if (def.hint && !isAdv) {

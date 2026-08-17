@@ -5,15 +5,18 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-ROOTFS=/opt/bullseye-armhf
+# ARCH=armhf（默认，ARMv7 32 位）或 arm64（aarch64）
+ARCH="${ARCH:-armhf}"
+ROOTFS="${ROOTFS:-/opt/bullseye-$ARCH}"
+OUTDIR="dist-$ARCH"
 VERSION=5.2.1
 NQPTP_VERSION=1.2.8
 # AIRPLAY2=0 可编译经典 AirPlay（无 ffmpeg 依赖）；默认带 AirPlay 2
 WITH_AIRPLAY2="${AIRPLAY2:-1}"
 
-echo "==> 准备 armhf rootfs"
+echo "==> 准备 $ARCH rootfs"
 if [ ! -d "$ROOTFS/debootstrap" ] && [ ! -d "$ROOTFS/usr/bin" ]; then
-    echo "错误: $ROOTFS 不存在，先执行: debootstrap --arch=armhf bullseye $ROOTFS http://deb.debian.org/debian"
+    echo "错误: $ROOTFS 不存在，先执行: debootstrap --arch=$ARCH bullseye $ROOTFS http://deb.debian.org/debian"
     exit 1
 fi
 
@@ -88,23 +91,23 @@ umount "$ROOTFS/sys" 2>/dev/null || true
 
 echo "==> 打包交付物"
 cd "$SCRIPT_DIR"
-mkdir -p dist-armhf
-rm -rf dist-armhf/shairport-sync-armhf
-mkdir -p dist-armhf/shairport-sync-armhf
-cp -a "$ROOTFS/pkg/." dist-armhf/shairport-sync-armhf/
-cat > dist-armhf/shairport-sync-armhf/README.txt <<EOF
-shairport-sync $VERSION (armhf / Debian 11 bullseye) 预编译包
+mkdir -p "$OUTDIR"
+rm -rf "$OUTDIR/shairport-sync-$ARCH"
+mkdir -p "$OUTDIR/shairport-sync-$ARCH"
+cp -a "$ROOTFS/pkg/." "$OUTDIR/shairport-sync-$ARCH/"
+cat > "$OUTDIR/shairport-sync-$ARCH/README.txt" <<EOF
+shairport-sync $VERSION ($ARCH / Debian 11 bullseye) 预编译包
 编译特性：$( [ "$WITH_AIRPLAY2" = "1" ] && echo "AirPlay 2 + 经典 AirPlay" || echo "经典 AirPlay" )
 
 目标设备安装步骤：
-1. 拷贝整个 shairport-sync-armhf 目录到设备（如 /tmp/）
+1. 拷贝整个 shairport-sync-$ARCH 目录到设备（如 /tmp/）
 2. 卸载旧版（保留配置）：sudo apt remove shairport-sync
 3. 安装运行时依赖（目标设备上执行，均为 bullseye 标准包）：
    apt install libasound2 libavahi-client3 libavahi-common3 libssl1.1 \\
      libpopt0 libconfig9 libsoxr0 libglib2.0-0
 $( [ "$WITH_AIRPLAY2" = "1" ] && echo "   AirPlay 2 额外依赖：" && echo "   apt install libavcodec58 libavformat58 libavutil56 libswresample3 \\\\" && echo "     libplist3 libsodium23 libgcrypt20" )
 4. 安装文件：
-   cd /tmp/shairport-sync-armhf
+   cd /tmp/shairport-sync-$ARCH
    sudo cp usr/local/bin/shairport-sync /usr/local/bin/
 $( [ "$WITH_AIRPLAY2" = "1" ] && echo "   sudo cp usr/local/bin/nqptp /usr/local/bin/" )
    sudo cp etc/dbus-1/system.d/*.conf /etc/dbus-1/system.d/
@@ -116,7 +119,7 @@ $( [ "$WITH_AIRPLAY2" = "1" ] && echo "   sudo systemctl enable --now nqptp   # 
    /usr/local/bin/shairport-sync -V   # 应显示 $VERSION 且含 AirPlay2
 $( [ "$WITH_AIRPLAY2" = "1" ] && echo "   systemctl is-active nqptp          # 应显示 active" )
 EOF
-cat >> dist-armhf/shairport-sync-armhf/README.txt <<'EOF'
+cat >> "$OUTDIR/shairport-sync-$ARCH/README.txt" <<'EOF'
 
 ---- shairport-sync systemd unit ----
 [Unit]
@@ -150,4 +153,4 @@ RestartSec=5
 [Install]
 WantedBy=multi-user.target
 EOF
-echo "完成: dist-armhf/shairport-sync-armhf/（含二进制、配置样例、unit、dbus policy）"
+echo "完成: $OUTDIR/shairport-sync-$ARCH/（含二进制、配置样例、unit、dbus policy）"

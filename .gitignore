@@ -32,4 +32,6 @@ go.work.sum
 # .vscode/
 
 dist/
+dist-armhf/
+dist-arm64/
 e2e_test.sh

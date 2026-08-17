@@ -4,6 +4,8 @@ Shairport Sync（AirPlay 音频接收器）的轻量 Web 管理界面。Apple �
 
 专为资源受限的嵌入式设备设计：**单二进制 + 内嵌前端**，常驻内存 <10MB（`GOMEMLIMIT=20MiB`），可在 **骁龙410 + 300MB RAM** 的 Debian（armhf/arm64）上运行，亦支持 Ubuntu 与 amd64。
 
+我的折腾笔记：[Notion|有史以来音质最好的 DIY AirPlay 接收器？](https://app.notion.com/p/DIY-AirPlay-3bfef92a1c708024bc1feac540e2ef54?source=copy_link)
+
 ## 功能
 
 - **服务控制**：查看运行状态（systemd/sysvinit 自适应）、启动/停止/重启 shairport-sync

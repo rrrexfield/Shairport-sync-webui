@@ -25,18 +25,34 @@ func TestParseActiveSession(t *testing.T) {
 }
 
 func TestParseFormat(t *testing.T) {
-	session := "AirPlay 2, timing protocol: PTP, format: 44100/16 (little-endian), audio mode: playing"
-	rate, depth := parseFormat(session)
-	if rate != 44100 || depth != 16 {
-		t.Errorf("rate=%d depth=%d", rate, depth)
+	cases := []struct {
+		in          string
+		wantRate    int
+		wantDepth   int
+		wantCh      int
+	}{
+		// 4.x active_session（format: 前缀 + 描述）
+		{"AirPlay 2, timing protocol: PTP, format: 44100/16 (little-endian), audio mode: playing", 44100, 16, 0},
+		{"AirPlay, format: 96000/24, audio mode: playing", 96000, 24, 0},
+		// 5.x SourceFormat（sdsc 码：编码/采样率/位深/声道）
+		{"ALAC/44100/S16_LE/2", 44100, 16, 2},
+		{"AAC/44100/S16_LE/2", 44100, 16, 2},
+		{"AAC/48000/S16_LE/2", 48000, 16, 2},
+		// 5.x OutputFormat（odsc 码）
+		{"44100/S32_LE/2", 44100, 32, 2},
+		// pipe asfm 码
+		{"44100/16", 44100, 16, 0},
+		{"96000/24", 96000, 24, 0},
+		// 无格式信息
+		{"无格式信息", 0, 0, 0},
+		{"", 0, 0, 0},
 	}
-	rate, depth = parseFormat("AirPlay, format: 96000/24, audio mode: playing")
-	if rate != 96000 || depth != 24 {
-		t.Errorf("rate=%d depth=%d", rate, depth)
-	}
-	rate, depth = parseFormat("无格式信息")
-	if rate != 0 || depth != 0 {
-		t.Errorf("rate=%d depth=%d", rate, depth)
+	for _, c := range cases {
+		rate, depth, ch := parseFormat(c.in)
+		if rate != c.wantRate || depth != c.wantDepth || ch != c.wantCh {
+			t.Errorf("parseFormat(%q) = %d/%d/%d, want %d/%d/%d",
+				c.in, rate, depth, ch, c.wantRate, c.wantDepth, c.wantCh)
+		}
 	}
 }
 

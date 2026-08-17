@@ -51,6 +51,45 @@ function fmtTime(unix) {
   return d.toLocaleTimeString("zh-CN", { hour12: false });
 }
 
+/* 音质：数字 → "44.1 kHz / 16 bit / 2 声道" */
+function fmtQuality(rate, depth, channels) {
+  if (!rate) return "";
+  const khz = rate >= 1000
+    ? (rate / 1000).toFixed(1).replace(/\.0$/, "") + " kHz"
+    : rate + " Hz";
+  let s = khz + " / " + depth + " bit";
+  if (channels) s += " / " + channels + " 声道";
+  return s;
+}
+
+/* 音质兜底：解析 pipe asfm 文本（"44100/16"、"ALAC/44100/S16_LE/2" 等） */
+function qualityFromText(text) {
+  if (!text) return "";
+  const nums = String(text).split("/").map((p) => (p.match(/\d+/) || [""])[0]).filter(Boolean);
+  if (nums.length >= 2) {
+    return fmtQuality(parseInt(nums[0], 10), parseInt(nums[1], 10),
+      nums[2] ? parseInt(nums[2], 10) : 0);
+  }
+  return text;
+}
+
+/* 进度："123.5 / 456.0"（秒）→ "2:04 / 7:36"；已含冒号的原样返回 */
+function fmtProgress(s) {
+  if (!s) return "—";
+  const m = String(s).match(/^\s*([\d.]+)\s*\/\s*([\d.]+)\s*$/);
+  if (m) {
+    const f = (x) => {
+      const sec = parseFloat(x);
+      if (isNaN(sec)) return x;
+      const mm = Math.floor(sec / 60);
+      const ss = Math.round(sec % 60);
+      return mm + ":" + String(ss).padStart(2, "0");
+    };
+    return f(m[1]) + " / " + f(m[2]);
+  }
+  return s;
+}
+
 /* ---------- 状态轮询 ---------- */
 
 async function pollStatus() {
@@ -124,19 +163,21 @@ function renderPlayer(s) {
   st.textContent = stateText;
   st.className = "pill" + (stateClass ? " " + stateClass : "");
 
-  // 音质：优先 4.x active_session 解析，其次 asfm 格式码
-  let quality = "";
-  if (p.sample_rate > 0) {
-    quality = p.sample_rate + " Hz / " + p.bit_depth + " bit";
-  }
-  $("player-quality").textContent = quality || (s.track.format || "");
+  // 音质：dbus（5.x SourceFormat / 4.x GetInfo）优先，pipe asfm 兜底
+  let quality = fmtQuality(p.sample_rate, p.bit_depth, p.channels);
+  if (!quality && s.track.format) quality = qualityFromText(s.track.format);
+  $("player-quality").textContent = quality || "";
 
   const t = s.track;
   $("track-title").textContent = t.title || "未在播放";
   $("track-artist").textContent = [t.artist, t.album].filter(Boolean).join(" · ");
   $("player-protocol").textContent = p.protocol || "—";
-  $("player-client").textContent = p.client || "—";
-  $("player-progress").textContent = p.progress || "—";
+  // 客户端：设备名（5.x ClientName）优先，IP（Client）作补充；老版本只有 IP
+  let client = "—";
+  if (p.client_name) client = p.client ? p.client_name + " · " + p.client : p.client_name;
+  else if (p.client) client = p.client;
+  $("player-client").textContent = client;
+  $("player-progress").textContent = fmtProgress(p.progress);
 }
 
 function renderSys(s) {

@@ -35,6 +35,7 @@ type PlayerStatus struct {
 	Available     bool    `json:"available"`
 	State         string  `json:"state"` // PlayerState / active_session 派生
 	Client        string  `json:"client"`
+	ClientName    string  `json:"client_name"` // 5.x 新增：客户端设备名（Client 只是 IP）
 	Progress      string  `json:"progress"`
 	AirplayVolume float64 `json:"airplay_volume"`
 	Version       string  `json:"version"`
@@ -43,11 +44,12 @@ type PlayerStatus struct {
 	ActiveSession string  `json:"active_session"` // 4.x GetInfo 原始会话描述
 	SampleRate    int     `json:"sample_rate"`    // 从 active_session/SourceFormat 解析
 	BitDepth      int     `json:"bit_depth"`
+	Channels      int     `json:"channels"` // 声道数（5.x SourceFormat 第三段）
 	// 5.x 顶层接口新增属性
 	Protocol     string `json:"protocol"`      // "AirPlay" / "AirPlay 2"
 	ServiceName  string `json:"service_name"`  // 服务显示名
-	SourceFormat string `json:"source_format"` // 源音质，如 "44100/16"
-	OutputFormat string `json:"output_format"` // 输出格式
+	SourceFormat string `json:"source_format"` // 源音质，如 "ALAC/44100/S16_LE/2"
+	OutputFormat string `json:"output_format"` // 输出格式，如 "44100/S32_LE/2"
 }
 
 // TrackInfo 是曲目信息（MPRIS 优先，pipe 互补）。
@@ -167,6 +169,7 @@ func (c *Client) GetPlayerStatus() PlayerStatus {
 		Available:     true,
 		State:         getString(obj, remoteIface, "PlayerState"),
 		Client:        getString(obj, remoteIface, "Client"),
+		ClientName:    getString(obj, remoteIface, "ClientName"),
 		Progress:      getString(obj, remoteIface, "ProgressString"),
 		AirplayVolume: getFloat64(obj, remoteIface, "AirplayVolume"),
 		Version:       getString(obj, "org.gnome.ShairportSync", "Version"),
@@ -180,8 +183,8 @@ func (c *Client) GetPlayerStatus() PlayerStatus {
 	}
 	// 音质信息：5.x SourceFormat 优先
 	if st.SourceFormat != "" {
-		if rate, depth := parseFormat(st.SourceFormat); rate > 0 {
-			st.SampleRate, st.BitDepth = rate, depth
+		if rate, depth, ch := parseFormat(st.SourceFormat); rate > 0 {
+			st.SampleRate, st.BitDepth, st.Channels = rate, depth, ch
 		}
 	}
 	// 4.x GetInfo 兼容
@@ -191,7 +194,7 @@ func (c *Client) GetPlayerStatus() PlayerStatus {
 			if st.ActiveSession != "" {
 				st.State = "playing"
 				if st.SampleRate == 0 {
-					st.SampleRate, st.BitDepth = parseFormat(st.ActiveSession)
+					st.SampleRate, st.BitDepth, st.Channels = parseFormat(st.ActiveSession)
 				}
 			}
 		}
@@ -326,7 +329,8 @@ var xmlUnmarshal = xml.Unmarshal
 // ---- 4.x active_session 解析 ----
 
 var reActiveSession = regexp.MustCompile(`<active_session>([^<]*)</active_session>`)
-var reFormat = regexp.MustCompile(`format:\s*(\d+)\s*/\s*(\d+)`)
+// reFormatDigit 提取一段格式描述中的第一个整数。
+var reFormatDigit = regexp.MustCompile(`\d+`)
 
 // parseActiveSession 从 GetInfo 返回的 XML 中提取 active_session。
 func parseActiveSession(xml string) string {
@@ -337,15 +341,38 @@ func parseActiveSession(xml string) string {
 	return strings.TrimSpace(m[1])
 }
 
-// parseFormat 从会话描述中解析采样率与位深（如 "format: 44100/16"）。
-func parseFormat(session string) (rate, depth int) {
-	m := reFormat.FindStringSubmatch(session)
-	if m == nil {
-		return 0, 0
+// parseFormat 从格式描述中解析采样率/位深/声道，兼容多版本格式：
+//
+//	5.x SourceFormat:  "ALAC/44100/S16_LE/2"、"AAC/44100/S16_LE/2"
+//	5.x OutputFormat:  "44100/S32_LE/2"
+//	4.x active_session: "AirPlay 2, ..., format: 44100/16 (little-endian), ..."
+//	pipe asfm 码:       "44100/16"
+//
+// 按 "/" 分段，依次取前三个含数字段中的整数。
+func parseFormat(s string) (rate, depth, channels int) {
+	s = strings.TrimSpace(s)
+	// 剥掉 4.x active_session 的 "format:" 前缀前的描述部分
+	if i := strings.Index(s, "format:"); i >= 0 {
+		s = s[i+len("format:"):]
 	}
-	rate = atoi(m[1])
-	depth = atoi(m[2])
-	return rate, depth
+	for _, part := range strings.Split(s, "/") {
+		m := reFormatDigit.FindString(part)
+		if m == "" {
+			continue
+		}
+		n := atoi(m)
+		switch {
+		case rate == 0:
+			rate = n
+		case depth == 0:
+			depth = n
+		case channels == 0:
+			channels = n
+		default:
+			return rate, depth, channels
+		}
+	}
+	return rate, depth, channels
 }
 
 func atoi(s string) int {

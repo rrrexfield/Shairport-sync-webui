@@ -363,7 +363,7 @@ textarea {
 /* ---------- 页脚（版本号） ---------- */
 .foot {
   max-width: 640px; margin: 0 auto;
-  padding: 28px 16px 44px;
+  padding: 6px 16px 18px;
   text-align: center;
   font-size: 12px;
   font-weight: 400;

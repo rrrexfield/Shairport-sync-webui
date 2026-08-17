@@ -73,10 +73,35 @@ function qualityFromText(text) {
   return text;
 }
 
-/* 进度："123.5 / 456.0"（秒）→ "2:04 / 7:36"；已含冒号的原样返回 */
+/* 帧数 → "mm:ss"（AirPlay RTSP 时间戳固定 44100 帧/秒） */
+function framesToTime(frames) {
+  if (frames < 0) frames = 0;
+  const sec = Math.floor(frames / 44100);
+  const mm = Math.floor(sec / 60);
+  const ss = sec % 60;
+  return mm + ":" + String(ss).padStart(2, "0");
+}
+
+/* 进度：
+ *   5.x prgr：三个 RTSP 帧时间戳 start/now/end → "已播 / 总长"
+ *   其他： "秒 / 秒" → "mm:ss / mm:ss"；已含冒号的字符串原样返回
+ */
 function fmtProgress(s) {
   if (!s) return "—";
-  const m = String(s).match(/^\s*([\d.]+)\s*\/\s*([\d.]+)\s*$/);
+  const str = String(s).trim();
+  // 5.x：start/now/end 三个整数（44100 帧/秒）
+  const ts = str.match(/^(\d+)\/(\d+)\/(\d+)$/);
+  if (ts) {
+    const start = parseInt(ts[1], 10);
+    const now = parseInt(ts[2], 10);
+    const end = parseInt(ts[3], 10);
+    if (end > start) {
+      return framesToTime(now - start) + " / " + framesToTime(end - start);
+    }
+    return str; // 异常时间戳（未开始/回绕）原样返回
+  }
+  // 双秒值："123.5 / 456.0"
+  const m = str.match(/^([\d.]+)\s*\/\s*([\d.]+)$/);
   if (m) {
     const f = (x) => {
       const sec = parseFloat(x);
@@ -87,7 +112,7 @@ function fmtProgress(s) {
     };
     return f(m[1]) + " / " + f(m[2]);
   }
-  return s;
+  return str;
 }
 
 /* ---------- 状态轮询 ---------- */

@@ -99,7 +99,7 @@ button { font-family: inherit; touch-action: manipulation; }
 
 /* ---------- 布局：单列居中（Apple 设置风格） ---------- */
 .page {
-  max-width: 640px; margin: 0 auto; padding: 16px 16px 48px;
+  max-width: 640px; margin: 0 auto; padding: 16px 16px 15px;
   display: flex; flex-direction: column; gap: 16px;
 }
 
@@ -360,7 +360,7 @@ textarea {
 .switch input:focus-visible + .slider { outline: 2px solid var(--accent); outline-offset: 2px; }
 .switch input:disabled + .slider { opacity: 0.4; cursor: default; }
 
-/* ---------- 页脚（版本号） ---------- */
+/* ---------- 页脚（版本号 + GitHub 链接） ---------- */
 .foot {
   max-width: 640px; margin: 0 auto;
   padding: 6px 16px 18px;
@@ -369,7 +369,13 @@ textarea {
   font-weight: 400;
   color: var(--tertiary);
   letter-spacing: 0.01em;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
 }
+.foot-link {
+  color: var(--secondary);
+  text-decoration: none;
+}
+.foot-link:hover { text-decoration: underline; }
 
 /* ---------- 确认弹窗（iOS alert 风格） ---------- */
 .modal-overlay {
